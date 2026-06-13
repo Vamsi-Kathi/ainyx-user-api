@@ -1,0 +1,31 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin/
+/server
+ainyx-user-api
+
+# Test / coverage
+*.test
+*.out
+coverage.*
+
+# Env & secrets
+.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Go workspace
+go.work
+go.work.sum
+
+# Docker volume data (if mounted locally)
+/mysql-data/
