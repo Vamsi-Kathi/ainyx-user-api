@@ -9,45 +9,72 @@
       --bg: #0f172a; --card: #1e293b; --line: #334155;
       --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8;
       --ok: #22c55e; --err: #ef4444; --warn: #f59e0b;
+      /* Render native controls (the date picker + its popup) in dark mode so
+         the calendar icon is light and visible against the dark field. */
+      color-scheme: dark;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       background: var(--bg); color: var(--text); padding: 24px;
+      -webkit-text-size-adjust: 100%;
     }
     h1 { margin: 0 0 4px; font-size: 22px; }
-    .sub { color: var(--muted); margin-bottom: 20px; font-size: 13px; }
-    .grid { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
+    .sub { color: var(--muted); margin-bottom: 20px; font-size: 13px; word-break: break-word; }
+    .grid { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; max-width: 1100px; }
     .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
     .card h2 { margin: 0 0 14px; font-size: 15px; color: var(--accent); }
     label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
     input, button {
-      width: 100%; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--line);
-      background: #0b1220; color: var(--text); font-size: 14px;
+      width: 100%; height: 42px; padding: 10px 12px; border-radius: 8px;
+      border: 1px solid var(--line); background: #0b1220; color: var(--text);
+      font-size: 14px; font-family: inherit; line-height: 1.2;
     }
+    input:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, .15);
+    }
+    /* Make the date field's calendar button properly visible and tappable. */
+    input[type=date]::-webkit-calendar-picker-indicator {
+      filter: invert(1); opacity: .6; cursor: pointer; padding: 2px; margin-left: 4px;
+    }
+    input[type=date]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
     button {
       cursor: pointer; background: var(--accent); color: #08131c; border: none;
       font-weight: 600; margin-top: 12px; transition: opacity .15s;
     }
     button:hover { opacity: .9; }
     button.secondary { background: #334155; color: var(--text); }
+    button:disabled { opacity: .4; cursor: not-allowed; }
     .row { display: flex; gap: 8px; }
     .row > * { flex: 1; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+    /* Horizontal scroll keeps the table usable on narrow screens without
+       crushing columns. */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
+    th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
     th { color: var(--muted); font-weight: 600; }
-    .actions button { width: auto; padding: 5px 10px; margin: 0 4px 0 0; font-size: 12px; }
-    .pill { padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #0b1220; border: 1px solid var(--line); }
+    .actions { display: flex; gap: 6px; }
+    .actions button { width: auto; height: auto; padding: 6px 12px; margin: 0; font-size: 12px; }
+    .pill { padding: 2px 10px; border-radius: 999px; font-size: 12px; background: #0b1220; border: 1px solid var(--line); }
     #toast {
-      position: fixed; bottom: 20px; right: 20px; padding: 12px 16px; border-radius: 8px;
+      position: fixed; bottom: 20px; right: 20px; left: auto; padding: 12px 16px; border-radius: 8px;
       color: #fff; font-size: 13px; opacity: 0; transform: translateY(10px);
       transition: all .2s; pointer-events: none; max-width: 380px;
     }
     #toast.show { opacity: 1; transform: translateY(0); }
-    .pager { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
-    .pager button { width: auto; padding: 6px 14px; margin: 0; }
+    .pager { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+    .pager button { width: auto; height: auto; padding: 8px 16px; margin: 0; }
     .muted { color: var(--muted); font-size: 12px; }
-    code { background: #0b1220; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+    code { background: #0b1220; padding: 1px 6px; border-radius: 4px; font-size: 12px; word-break: break-all; }
+
+    /* ---- Mobile: stack the columns and tighten spacing ---- */
+    @media (max-width: 760px) {
+      body { padding: 16px; }
+      h1 { font-size: 20px; }
+      .grid { grid-template-columns: 1fr; gap: 16px; }
+      #toast { left: 16px; right: 16px; max-width: none; text-align: center; }
+    }
   </style>
 </head>
 <body>
@@ -70,18 +97,20 @@
     <!-- Right: list -->
     <div class="card">
       <h2>Users</h2>
-      <table>
-        <thead>
-          <tr><th>ID</th><th>Name</th><th>DOB</th><th>Age</th><th>Actions</th></tr>
-        </thead>
-        <tbody id="rows">
-          <tr><td colspan="5" class="muted">Loading…</td></tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Name</th><th>DOB</th><th>Age</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td colspan="5" class="muted">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
       <div class="pager">
-        <button class="secondary" onclick="prevPage()">← Prev</button>
+        <button id="prevBtn" class="secondary" onclick="prevPage()">← Prev</button>
         <span class="muted">Page <b id="pageNum">1</b> · <span id="totalLabel">0</span> total</span>
-        <button class="secondary" onclick="nextPage()">Next →</button>
+        <button id="nextBtn" class="secondary" onclick="nextPage()">Next →</button>
       </div>
     </div>
   </div>
@@ -122,18 +151,33 @@
       return body;
     }
 
+    // Cache of the rows currently rendered, keyed by id — lets the delegated
+    // click handler look up name/dob without smuggling them through markup.
+    let usersOnPage = {};
+
     async function load() {
       try {
         const data = await api(`/users?page=${page}&limit=${limit}`);
         total = data.pagination.total;
+
+        // If a delete emptied the current page (and it isn't page 1), step back
+        // and reload so the user never lands on a stranded "No users" page.
+        if ((!data.data || data.data.length === 0) && page > 1) {
+          page--;
+          return load();
+        }
+
         document.getElementById("pageNum").textContent = data.pagination.page;
         document.getElementById("totalLabel").textContent = total;
+        updatePager();
 
         const rows = document.getElementById("rows");
+        usersOnPage = {};
         if (!data.data || data.data.length === 0) {
           rows.innerHTML = `<tr><td colspan="5" class="muted">No users yet.</td></tr>`;
           return;
         }
+        data.data.forEach(u => { usersOnPage[u.id] = u; });
         rows.innerHTML = data.data.map(u => `
           <tr>
             <td>${u.id}</td>
@@ -141,14 +185,33 @@
             <td>${u.dob}</td>
             <td><span class="pill">${u.age}</span></td>
             <td class="actions">
-              <button onclick='edit(${u.id}, ${JSON.stringify(u.name)}, "${u.dob}")'>Edit</button>
-              <button onclick="del(${u.id})">Delete</button>
+              <button data-action="edit" data-id="${u.id}">Edit</button>
+              <button data-action="del" data-id="${u.id}">Delete</button>
             </td>
           </tr>`).join("");
       } catch (e) {
         toast(e.message, "err");
       }
     }
+
+    function updatePager() {
+      document.getElementById("prevBtn").disabled = page <= 1;
+      document.getElementById("nextBtn").disabled = page * limit >= total;
+    }
+
+    // Event delegation: one listener for all Edit/Delete buttons, present and
+    // future. Avoids interpolating user data into inline handlers entirely.
+    document.getElementById("rows").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      const id = Number(btn.dataset.id);
+      if (btn.dataset.action === "edit") {
+        const u = usersOnPage[id];
+        if (u) edit(u.id, u.name, u.dob);
+      } else if (btn.dataset.action === "del") {
+        del(id);
+      }
+    });
 
     function escapeHtml(s) {
       return String(s).replace(/[&<>"']/g, c => (
