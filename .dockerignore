@@ -1,0 +1,23 @@
+# Keep the build context small and never ship secrets or local state into
+# image layers. The final image only contains the compiled binary.
+.git
+.gitignore
+.env
+.env.*
+*.md
+screenshots/
+.claude/
+.idea/
+.vscode/
+
+# Build artifacts / test output
+/bin/
+/server
+ainyx-user-api
+*.exe
+*.test
+*.out
+coverage.*
+
+# Local DB volume data (if ever mounted here)
+/mysql-data/

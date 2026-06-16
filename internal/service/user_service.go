@@ -170,28 +170,26 @@ func (s *UserService) List(ctx context.Context, page, limit int) (*models.ListUs
 	}, nil
 }
 
-// Update validates and persists changes to an existing user.
+// Update validates and persists changes to an existing user. It relies on the
+// UPDATE's affected-row count to detect a missing user, which is race-free (no
+// check-then-act window) and saves a round-trip versus a separate existence
+// query.
 func (s *UserService) Update(ctx context.Context, id uint64, req models.UpdateUserRequest) (*models.UserResponse, error) {
 	dob, err := parseDOB(req.Dob)
 	if err != nil {
 		return nil, err
 	}
 
-	// Ensure the user exists first so we can return a clean 404.
-	if _, err := s.q.GetUser(ctx, id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
-		}
-		s.log.Error("db get user (pre-update) failed", zap.Error(err), zap.Uint64("user_id", id))
-		return nil, err
-	}
-
-	if err := s.q.UpdateUser(ctx, db.UpdateUserParams{
+	res, err := s.q.UpdateUser(ctx, db.UpdateUserParams{
 		Name: req.Name,
 		Dob:  dob,
 		ID:   id,
-	}); err != nil {
+	})
+	if err != nil {
 		s.log.Error("db update user failed", zap.Error(err), zap.Uint64("user_id", id))
+		return nil, err
+	}
+	if err := requireRowAffected(res); err != nil {
 		return nil, err
 	}
 
@@ -204,22 +202,33 @@ func (s *UserService) Update(ctx context.Context, id uint64, req models.UpdateUs
 	}, nil
 }
 
-// Delete removes a user, returning ErrNotFound if it does not exist.
+// Delete removes a user, returning ErrNotFound if no row matched. Like Update,
+// it uses the affected-row count rather than a check-then-delete sequence.
 func (s *UserService) Delete(ctx context.Context, id uint64) error {
-	if _, err := s.q.GetUser(ctx, id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrNotFound
-		}
-		s.log.Error("db get user (pre-delete) failed", zap.Error(err), zap.Uint64("user_id", id))
+	res, err := s.q.DeleteUser(ctx, id)
+	if err != nil {
+		s.log.Error("db delete user failed", zap.Error(err), zap.Uint64("user_id", id))
 		return err
 	}
-
-	if err := s.q.DeleteUser(ctx, id); err != nil {
-		s.log.Error("db delete user failed", zap.Error(err), zap.Uint64("user_id", id))
+	if err := requireRowAffected(res); err != nil {
 		return err
 	}
 
 	s.log.Info("db operation", zap.String("action", "delete_user"), zap.Uint64("user_id", id))
+	return nil
+}
+
+// requireRowAffected maps a write that touched no rows to ErrNotFound. A driver
+// that cannot report RowsAffected is treated as an internal error rather than a
+// silent success.
+func requireRowAffected(res sql.Result) error {
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
 	return nil
 }
 

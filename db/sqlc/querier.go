@@ -12,10 +12,10 @@ import (
 type Querier interface {
 	CountUsers(ctx context.Context) (int64, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (sql.Result, error)
-	DeleteUser(ctx context.Context, id uint64) error
+	DeleteUser(ctx context.Context, id uint64) (sql.Result, error)
 	GetUser(ctx context.Context, id uint64) (User, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
-	UpdateUser(ctx context.Context, arg UpdateUserParams) error
+	UpdateUser(ctx context.Context, arg UpdateUserParams) (sql.Result, error)
 }
 
 var _ Querier = (*Queries)(nil)

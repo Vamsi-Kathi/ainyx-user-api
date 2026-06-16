@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -39,6 +40,9 @@ func (h *UserHandler) Create(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid JSON body")
 	}
+	// Trim before validating so the min/max length rules apply to the real
+	// content and whitespace-only names are rejected.
+	req.Name = strings.TrimSpace(req.Name)
 	if err := h.validate.Struct(req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, validationMessage(err))
 	}
@@ -87,6 +91,7 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid JSON body")
 	}
+	req.Name = strings.TrimSpace(req.Name)
 	if err := h.validate.Struct(req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, validationMessage(err))
 	}

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"os"
 	"os/signal"
 	"syscall"
@@ -61,10 +60,12 @@ func main() {
 	routes.Register(app, userHandler, healthHandler)
 
 	// Run the server in a goroutine so we can listen for shutdown signals.
+	// Fiber's Listen returns nil on a graceful Shutdown, so any non-nil error
+	// here is a genuine startup/bind failure.
 	go func() {
 		addr := ":" + cfg.AppPort
 		log.Info("server starting", zap.String("addr", addr), zap.String("env", cfg.AppEnv))
-		if err := app.Listen(addr); err != nil && !errors.Is(err, fiber.ErrServiceUnavailable) {
+		if err := app.Listen(addr); err != nil {
 			log.Fatal("server failed", zap.Error(err))
 		}
 	}()

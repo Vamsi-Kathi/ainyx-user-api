@@ -4,16 +4,16 @@ services:
     container_name: ainyx-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-3499}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in your .env}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-ainyx_users}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       # Auto-apply the schema on first boot of an empty data volume.
       - ./db/migrations/000001_create_users_table.up.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-3499}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -37,7 +37,7 @@ services:
       DB_HOST: "mysql"
       DB_PORT: "3306"
       DB_USER: "root"
-      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-3499}
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in your .env}
       DB_NAME: ${MYSQL_DATABASE:-ainyx_users}
     ports:
       - "3000:3000"

@@ -18,11 +18,11 @@ LIMIT ? OFFSET ?;
 SELECT COUNT(*) AS total
 FROM users;
 
--- name: UpdateUser :exec
+-- name: UpdateUser :execresult
 UPDATE users
 SET name = ?, dob = ?
 WHERE id = ?;
 
--- name: DeleteUser :exec
+-- name: DeleteUser :execresult
 DELETE FROM users
 WHERE id = ?;
