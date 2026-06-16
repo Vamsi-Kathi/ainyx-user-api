@@ -260,12 +260,18 @@ auto-applied on first boot via an init script mounted into the MySQL container �
 no manual migration needed.
 
 1. **Start Docker Desktop** and make sure it is running.
-2. **Build and start everything:**
+2. **Create your `.env`** — Compose reads `MYSQL_ROOT_PASSWORD` from it and will
+   refuse to start if it is missing (there is no hardcoded default):
+   ```bash
+   cp .env.example .env
+   # then edit .env and set MYSQL_ROOT_PASSWORD to a password of your choice
+   ```
+3. **Build and start everything:**
    ```bash
    docker compose up --build
    ```
-3. **Wait** until you see the app log `server starting` and `connected to database`.
-4. **Verify it's up:**
+4. **Wait** until you see the app log `server starting` and `connected to database`.
+5. **Verify it's up:**
    ```bash
    curl http://localhost:3000/health
    # -> {"status":"ok","db":"connected","timestamp":"..."}
@@ -402,7 +408,7 @@ All config comes from environment variables (see `.env.example`):
 | `DB_HOST`     | `localhost`    | MySQL host                 |
 | `DB_PORT`     | `3306`         | MySQL port                 |
 | `DB_USER`     | `root`         | MySQL user                 |
-| `DB_PASSWORD` | `yourpassword`         | MySQL password             |
+| `DB_PASSWORD` | _(required)_   | MySQL password — no default; must be set in the environment / `.env` |
 | `DB_NAME`     | `ainyx_users`  | Database name              |
 
 ## Assignment Requirements Coverage
